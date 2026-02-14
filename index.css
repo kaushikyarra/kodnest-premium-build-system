@@ -15,7 +15,7 @@
     --color-warning: #B8860B;
     --color-border: #D4D2CC;
     --color-surface: #FFFFFF;
-    
+
     /* Typography */
     --font-serif: 'Crimson Pro', serif;
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -27,14 +27,14 @@
     --font-size-small: 14px;
     --line-height-body: 1.7;
     --line-height-heading: 1.2;
-    
+
     /* Spacing Scale - Consistent 8px base */
     --space-xs: 8px;
     --space-sm: 16px;
     --space-md: 24px;
     --space-lg: 40px;
     --space-xl: 64px;
-    
+
     /* Layout */
     --max-text-width: 720px;
     --border-radius: 4px;
@@ -68,7 +68,12 @@ body {
 /* ============================================
    TYPOGRAPHY SYSTEM
    ============================================ */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
     font-family: var(--font-serif);
     font-weight: 600;
     line-height: var(--line-height-heading);
@@ -487,12 +492,12 @@ p {
     .main-content {
         flex-direction: column;
     }
-    
+
     .primary-workspace,
     .secondary-panel {
         flex: 1;
     }
-    
+
     .checklist {
         flex-wrap: wrap;
         gap: var(--space-sm);
@@ -505,24 +510,168 @@ p {
         --font-size-h2: 24px;
         --font-size-h3: 20px;
     }
-    
+
     .top-bar {
         flex-direction: column;
         gap: var(--space-sm);
         align-items: stretch;
     }
-    
+
     .top-bar__left,
     .top-bar__center,
     .top-bar__right {
         justify-content: center;
     }
-    
+
     .context-header {
         padding: var(--space-lg) var(--space-sm);
     }
-    
+
     .main-content {
         padding: var(--space-sm);
+    }
+}
+
+/* ============================================
+   NAVIGATION BAR (Job Notification Tracker)
+   ============================================ */
+.app-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-lg);
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.app-nav__brand {
+    font-family: var(--font-serif);
+    font-size: var(--font-size-h3);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.nav-menu {
+    display: flex;
+    gap: var(--space-lg);
+    list-style: none;
+}
+
+.nav-link {
+    font-family: var(--font-sans);
+    font-size: var(--font-size-body);
+    color: var(--color-text-primary);
+    text-decoration: none;
+    padding-bottom: var(--space-xs);
+    border-bottom: 2px solid transparent;
+    transition: border-color var(--transition-speed) var(--transition-timing);
+}
+
+.nav-link:hover {
+    border-bottom-color: var(--color-accent);
+    opacity: 0.8;
+}
+
+.nav-link.active {
+    border-bottom-color: var(--color-accent);
+    font-weight: 500;
+}
+
+/* Mobile Menu Toggle */
+.mobile-menu-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: var(--space-xs);
+}
+
+.mobile-menu-toggle span {
+    width: 24px;
+    height: 2px;
+    background-color: var(--color-text-primary);
+    transition: all var(--transition-speed) var(--transition-timing);
+}
+
+.mobile-menu-toggle.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.mobile-menu-toggle.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.mobile-menu-toggle.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* ============================================
+   PAGE CONTAINER (Job Notification Tracker)
+   ============================================ */
+.page-container {
+    padding: var(--space-xl) var(--space-lg);
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.page-title {
+    font-size: var(--font-size-h1);
+    margin-bottom: var(--space-sm);
+}
+
+.page-subtitle {
+    font-size: var(--font-size-body-large);
+    color: var(--color-text-primary);
+    opacity: 0.6;
+    max-width: var(--max-text-width);
+}
+
+/* ============================================
+   RESPONSIVE - MOBILE NAVIGATION
+   ============================================ */
+@media (max-width: 768px) {
+    .mobile-menu-toggle {
+        display: flex;
+    }
+
+    .nav-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        gap: 0;
+        background-color: var(--color-surface);
+        border-bottom: 1px solid var(--color-border);
+        padding: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height var(--transition-speed) var(--transition-timing);
+    }
+
+    .nav-menu.active {
+        max-height: 300px;
+    }
+
+    .nav-link {
+        padding: var(--space-sm) var(--space-lg);
+        border-bottom: none;
+        border-left: 2px solid transparent;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+        border-bottom-color: transparent;
+        border-left-color: var(--color-accent);
+        background-color: var(--color-background);
+    }
+
+    .page-container {
+        padding: var(--space-lg) var(--space-sm);
     }
 }

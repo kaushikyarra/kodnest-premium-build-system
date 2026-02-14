@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,135 +8,38 @@
     <meta name="description" content="A calm, intentional design system for serious B2C products">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="index.css">
 </head>
-<body>
-    <!-- Top Bar -->
-    <header class="top-bar">
-        <div class="top-bar__left">
-            <span class="project-name">E-Commerce Platform Redesign</span>
-        </div>
-        <div class="top-bar__center">
-            <div class="progress-indicator">
-                <span class="progress-indicator__text">Step 3 / 8</span>
-                <div class="progress-indicator__bar">
-                    <div class="progress-indicator__fill" style="width: 37.5%;"></div>
-                </div>
-            </div>
-        </div>
-        <div class="top-bar__right">
-            <span class="status-badge status-badge--in-progress">In Progress</span>
-        </div>
-    </header>
 
-    <!-- Context Header -->
-    <section class="context-header">
-        <h1 class="context-header__title">Design Your Product Interface</h1>
-        <p class="context-header__subtitle">Define the core screens and user flows for your application</p>
-    </section>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="app-nav">
+        <div class="app-nav__brand">Job Notification Tracker</div>
+
+        <button class="mobile-menu-toggle" aria-label="Toggle menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+        <ul class="nav-menu">
+            <li><a href="#/dashboard" class="nav-link">Dashboard</a></li>
+            <li><a href="#/saved" class="nav-link">Saved</a></li>
+            <li><a href="#/digest" class="nav-link">Digest</a></li>
+            <li><a href="#/settings" class="nav-link">Settings</a></li>
+            <li><a href="#/proof" class="nav-link">Proof</a></li>
+        </ul>
+    </nav>
 
     <!-- Main Content Area -->
-    <div class="main-content">
-        <!-- Primary Workspace (70%) -->
-        <main class="primary-workspace">
-            <div class="card">
-                <h2 class="card__title">Interface Builder</h2>
-                <p class="card__description">Configure your primary user interface components and navigation structure.</p>
-                
-                <div class="form-group">
-                    <label class="form-label" for="screen-name">Screen Name</label>
-                    <input type="text" id="screen-name" class="input" placeholder="e.g., Dashboard, Product Listing">
-                </div>
+    <main id="app-content">
+        <!-- Content will be dynamically rendered here by JavaScript -->
+    </main>
 
-                <div class="form-group">
-                    <label class="form-label" for="screen-purpose">Purpose</label>
-                    <textarea id="screen-purpose" class="input input--textarea" rows="4" placeholder="Describe what this screen accomplishes"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Screen Type</label>
-                    <div class="radio-group">
-                        <label class="radio-label">
-                            <input type="radio" name="screen-type" value="list" checked>
-                            <span>List View</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="screen-type" value="detail">
-                            <span>Detail View</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="screen-type" value="form">
-                            <span>Form</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="button-group">
-                    <button class="button button--primary">Save Screen</button>
-                    <button class="button button--secondary">Preview</button>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3 class="card__subtitle">Configured Screens</h3>
-                <div class="empty-state">
-                    <p class="empty-state__text">No screens configured yet</p>
-                    <p class="empty-state__action">Add your first screen using the form above</p>
-                </div>
-            </div>
-        </main>
-
-        <!-- Secondary Panel (30%) -->
-        <aside class="secondary-panel">
-            <div class="panel-section">
-                <h3 class="panel-section__title">Step Explanation</h3>
-                <p class="panel-section__text">Define each screen in your application. Focus on the primary user flows and essential functionality.</p>
-            </div>
-
-            <div class="panel-section">
-                <h3 class="panel-section__title">AI Prompt</h3>
-                <div class="prompt-box">
-                    <code class="prompt-box__code">Create a responsive dashboard screen with user metrics, recent activity feed, and quick action buttons. Use card-based layout with clean spacing.</code>
-                </div>
-                <button class="button button--secondary button--small">Copy Prompt</button>
-            </div>
-
-            <div class="panel-section">
-                <h3 class="panel-section__title">Actions</h3>
-                <div class="action-buttons">
-                    <button class="button button--secondary button--full">Build in Lovable</button>
-                    <button class="button button--secondary button--full">It Worked</button>
-                    <button class="button button--secondary button--full">Report Error</button>
-                    <button class="button button--secondary button--full">Add Screenshot</button>
-                </div>
-            </div>
-        </aside>
-    </div>
-
-    <!-- Proof Footer -->
-    <footer class="proof-footer">
-        <div class="proof-footer__content">
-            <h4 class="proof-footer__title">Completion Checklist</h4>
-            <div class="checklist">
-                <label class="checklist__item">
-                    <input type="checkbox" class="checklist__checkbox">
-                    <span class="checklist__label">UI Built</span>
-                </label>
-                <label class="checklist__item">
-                    <input type="checkbox" class="checklist__checkbox">
-                    <span class="checklist__label">Logic Working</span>
-                </label>
-                <label class="checklist__item">
-                    <input type="checkbox" class="checklist__checkbox">
-                    <span class="checklist__label">Test Passed</span>
-                </label>
-                <label class="checklist__item">
-                    <input type="checkbox" class="checklist__checkbox">
-                    <span class="checklist__label">Deployed</span>
-                </label>
-            </div>
-        </div>
-    </footer>
+    <script src="app.js"></script>
 </body>
+
 </html>
