@@ -872,6 +872,7 @@ function renderDigestContent(digest) {
             
             <div class="digest-actions">
                 <button class="button button--secondary" id="copy-digest-btn">Copy Digest to Clipboard</button>
+                <button class="button button--secondary" id="regenerate-digest-btn">Regenerate Digest</button>
                 <button class="button button--primary" id="email-digest-btn">Create Email Draft</button>
             </div>
         </div>
@@ -880,6 +881,26 @@ function renderDigestContent(digest) {
     // Setup action buttons
     document.getElementById('copy-digest-btn').addEventListener('click', () => copyDigestToClipboard(digest));
     document.getElementById('email-digest-btn').addEventListener('click', () => createEmailDraft(digest));
+
+    // Setup regenerate button
+    document.getElementById('regenerate-digest-btn').addEventListener('click', () => {
+        if (confirm('Regenerate today\'s digest with current preferences?')) {
+            const newDigest = generateDailyDigest();
+            if (newDigest.jobs.length === 0) {
+                const contentArea = document.getElementById('app-content');
+                contentArea.innerHTML = `
+                    <div class="page-container">
+                        <h1 class="page-title">Daily Digest</h1>
+                        <div class="empty-state">
+                            <p class="empty-state__message">No matching roles today. Check again tomorrow.</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                renderDigestContent(newDigest);
+            }
+        }
+    });
 
     // Setup apply buttons
     document.querySelectorAll('.digest-job-card__apply').forEach(btn => {
