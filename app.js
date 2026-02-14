@@ -22,9 +22,8 @@ const pages = {
         ctaLink: '#/settings'
     },
     dashboard: {
-        type: 'empty',
-        title: 'Dashboard',
-        emptyMessage: 'No jobs yet. In the next step, you will load a realistic dataset.'
+        type: 'dashboard',
+        title: 'Dashboard'
     },
     settings: {
         type: 'settings',
@@ -32,9 +31,8 @@ const pages = {
         subtitle: 'Configure your job preferences'
     },
     saved: {
-        type: 'empty',
-        title: 'Saved Jobs',
-        emptyMessage: 'You haven\'t saved any jobs yet. When you find interesting opportunities, save them here for later review.'
+        type: 'saved',
+        title: 'Saved Jobs'
     },
     digest: {
         type: 'empty',
@@ -231,6 +229,311 @@ function renderPage(pageName) {
         `;
         return;
     }
+
+    // Handle dashboard page
+    if (pageData.type === 'dashboard') {
+        renderDashboard();
+        return;
+    }
+
+    // Handle saved jobs page
+    if (pageData.type === 'saved') {
+        renderSavedJobs();
+        return;
+    }
+}
+
+// Render dashboard with job cards and filters
+function renderDashboard() {
+    const contentArea = document.getElementById('app-content');
+
+    contentArea.innerHTML = `
+        <div class="page-container">
+            <h1 class="page-title">Dashboard</h1>
+            
+            <div class="filter-bar">
+                <input type="text" id="search-input" class="input filter-input" placeholder="Search by title or company...">
+                
+                <select id="location-filter" class="input filter-select">
+                    <option value="">All Locations</option>
+                    <option value="Bangalore">Bangalore</option>
+                    <option value="Pune">Pune</option>
+                    <option value="Hyderabad">Hyderabad</option>
+                    <option value="Chennai">Chennai</option>
+                    <option value="Mumbai">Mumbai</option>
+                    <option value="Gurgaon">Gurgaon</option>
+                    <option value="Noida">Noida</option>
+                </select>
+                
+                <select id="mode-filter" class="input filter-select">
+                    <option value="">All Modes</option>
+                    <option value="Remote">Remote</option>
+                    <option value="Hybrid">Hybrid</option>
+                    <option value="Onsite">Onsite</option>
+                </select>
+                
+                <select id="experience-filter" class="input filter-select">
+                    <option value="">All Experience</option>
+                    <option value="Fresher">Fresher</option>
+                    <option value="0-1">0-1 years</option>
+                    <option value="1-3">1-3 years</option>
+                    <option value="3-5">3-5 years</option>
+                </select>
+                
+                <select id="source-filter" class="input filter-select">
+                    <option value="">All Sources</option>
+                    <option value="LinkedIn">LinkedIn</option>
+                    <option value="Naukri">Naukri</option>
+                    <option value="Indeed">Indeed</option>
+                </select>
+                
+                <select id="sort-filter" class="input filter-select">
+                    <option value="latest">Latest</option>
+                    <option value="oldest">Oldest</option>
+                </select>
+            </div>
+            
+            <div id="jobs-grid" class="jobs-grid"></div>
+        </div>
+        
+        <div id="job-modal" class="modal">
+            <div class="modal-content">
+                <button class="modal-close">&times;</button>
+                <div id="modal-body"></div>
+            </div>
+        </div>
+    `;
+
+    // Setup filter listeners
+    document.getElementById('search-input').addEventListener('input', filterJobs);
+    document.getElementById('location-filter').addEventListener('change', filterJobs);
+    document.getElementById('mode-filter').addEventListener('change', filterJobs);
+    document.getElementById('experience-filter').addEventListener('change', filterJobs);
+    document.getElementById('source-filter').addEventListener('change', filterJobs);
+    document.getElementById('sort-filter').addEventListener('change', filterJobs);
+
+    // Setup modal close
+    document.querySelector('.modal-close').addEventListener('click', closeModal);
+    document.getElementById('job-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'job-modal') closeModal();
+    });
+
+    // Initial render
+    filterJobs();
+}
+
+// Filter and render jobs
+function filterJobs() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const locationFilter = document.getElementById('location-filter').value;
+    const modeFilter = document.getElementById('mode-filter').value;
+    const experienceFilter = document.getElementById('experience-filter').value;
+    const sourceFilter = document.getElementById('source-filter').value;
+    const sortFilter = document.getElementById('sort-filter').value;
+
+    let filtered = jobsData.filter(job => {
+        const matchesSearch = job.title.toLowerCase().includes(searchTerm) ||
+            job.company.toLowerCase().includes(searchTerm);
+        const matchesLocation = !locationFilter || job.location === locationFilter;
+        const matchesMode = !modeFilter || job.mode === modeFilter;
+        const matchesExperience = !experienceFilter || job.experience === experienceFilter;
+        const matchesSource = !sourceFilter || job.source === sourceFilter;
+
+        return matchesSearch && matchesLocation && matchesMode && matchesExperience && matchesSource;
+    });
+
+    // Sort
+    if (sortFilter === 'latest') {
+        filtered.sort((a, b) => a.postedDaysAgo - b.postedDaysAgo);
+    } else {
+        filtered.sort((a, b) => b.postedDaysAgo - a.postedDaysAgo);
+    }
+
+    renderJobCards(filtered);
+}
+
+// Render job cards
+function renderJobCards(jobs) {
+    const grid = document.getElementById('jobs-grid');
+
+    if (jobs.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><p class="empty-state__message">No jobs found matching your filters.</p></div>';
+        return;
+    }
+
+    grid.innerHTML = jobs.map(job => createJobCard(job)).join('');
+
+    // Add event listeners
+    document.querySelectorAll('.job-card__view').forEach(btn => {
+        btn.addEventListener('click', () => viewJob(btn.dataset.id));
+    });
+
+    document.querySelectorAll('.job-card__save').forEach(btn => {
+        btn.addEventListener('click', () => toggleSaveJob(btn.dataset.id));
+    });
+
+    document.querySelectorAll('.job-card__apply').forEach(btn => {
+        btn.addEventListener('click', () => applyJob(btn.dataset.url));
+    });
+}
+
+// Create job card HTML
+function createJobCard(job) {
+    const savedJobs = getSavedJobs();
+    const isSaved = savedJobs.includes(job.id);
+    const daysText = job.postedDaysAgo === 0 ? 'Today' :
+        job.postedDaysAgo === 1 ? '1 day ago' :
+            `${job.postedDaysAgo} days ago`;
+
+    return `
+        <div class="job-card">
+            <div class="job-card__header">
+                <h3 class="job-card__title">${job.title}</h3>
+                <span class="badge badge--${job.source.toLowerCase()}">${job.source}</span>
+            </div>
+            
+            <div class="job-card__company">${job.company}</div>
+            
+            <div class="job-card__details">
+                <span class="job-card__detail">
+                    <span class="detail-icon">📍</span> ${job.location}
+                </span>
+                <span class="job-card__detail">
+                    <span class="detail-icon">💼</span> ${job.mode}
+                </span>
+                <span class="job-card__detail">
+                    <span class="detail-icon">⏱️</span> ${job.experience}
+                </span>
+            </div>
+            
+            <div class="job-card__salary">${job.salaryRange}</div>
+            
+            <div class="job-card__footer">
+                <span class="job-card__posted">${daysText}</span>
+                <div class="job-card__actions">
+                    <button class="button button--secondary button--small job-card__view" data-id="${job.id}">View</button>
+                    <button class="button ${isSaved ? 'button--primary' : 'button--secondary'} button--small job-card__save" data-id="${job.id}">
+                        ${isSaved ? 'Saved ✓' : 'Save'}
+                    </button>
+                    <button class="button button--primary button--small job-card__apply" data-url="${job.applyUrl}">Apply</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// View job in modal
+function viewJob(jobId) {
+    const job = jobsData.find(j => j.id === parseInt(jobId));
+    if (!job) return;
+
+    const modalBody = document.getElementById('modal-body');
+    modalBody.innerHTML = `
+        <h2 class="modal-title">${job.title}</h2>
+        <div class="modal-company">${job.company}</div>
+        
+        <div class="modal-details">
+            <span><strong>Location:</strong> ${job.location}</span>
+            <span><strong>Mode:</strong> ${job.mode}</span>
+            <span><strong>Experience:</strong> ${job.experience}</span>
+            <span><strong>Salary:</strong> ${job.salaryRange}</span>
+            <span><strong>Source:</strong> ${job.source}</span>
+        </div>
+        
+        <div class="modal-section">
+            <h3>Description</h3>
+            <p>${job.description}</p>
+        </div>
+        
+        <div class="modal-section">
+            <h3>Required Skills</h3>
+            <div class="skills-list">
+                ${job.skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+            </div>
+        </div>
+        
+        <div class="modal-actions">
+            <button class="button button--secondary" onclick="closeModal()">Close</button>
+            <button class="button button--primary" onclick="window.open('${job.applyUrl}', '_blank')">Apply Now</button>
+        </div>
+    `;
+
+    document.getElementById('job-modal').classList.add('active');
+}
+
+// Close modal
+function closeModal() {
+    document.getElementById('job-modal').classList.remove('active');
+}
+
+// Toggle save job
+function toggleSaveJob(jobId) {
+    const savedJobs = getSavedJobs();
+    const id = parseInt(jobId);
+
+    if (savedJobs.includes(id)) {
+        const index = savedJobs.indexOf(id);
+        savedJobs.splice(index, 1);
+    } else {
+        savedJobs.push(id);
+    }
+
+    localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+    filterJobs(); // Re-render to update button state
+}
+
+// Get saved jobs from localStorage
+function getSavedJobs() {
+    const saved = localStorage.getItem('savedJobs');
+    return saved ? JSON.parse(saved) : [];
+}
+
+// Apply to job
+function applyJob(url) {
+    window.open(url, '_blank');
+}
+
+// Render saved jobs page
+function renderSavedJobs() {
+    const contentArea = document.getElementById('app-content');
+    const savedJobIds = getSavedJobs();
+
+    if (savedJobIds.length === 0) {
+        contentArea.innerHTML = `
+            <div class="page-container">
+                <h1 class="page-title">Saved Jobs</h1>
+                <div class="empty-state">
+                    <p class="empty-state__message">You haven't saved any jobs yet. When you find interesting opportunities, save them here for later review.</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    const savedJobs = jobsData.filter(job => savedJobIds.includes(job.id));
+
+    contentArea.innerHTML = `
+        <div class="page-container">
+            <h1 class="page-title">Saved Jobs</h1>
+            <p class="page-subtitle">You have ${savedJobs.length} saved job${savedJobs.length !== 1 ? 's' : ''}</p>
+            <div id="jobs-grid" class="jobs-grid"></div>
+        </div>
+        
+        <div id="job-modal" class="modal">
+            <div class="modal-content">
+                <button class="modal-close">&times;</button>
+                <div id="modal-body"></div>
+            </div>
+        </div>
+    `;
+
+    // Setup modal close
+    document.querySelector('.modal-close').addEventListener('click', closeModal);
+    document.getElementById('job-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'job-modal') closeModal();
+    });
+
+    renderJobCards(savedJobs);
 }
 
 // Update active navigation link
