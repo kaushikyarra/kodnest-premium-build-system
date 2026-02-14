@@ -775,7 +775,11 @@ function generateDailyDigest() {
         jobs: topJobs
     };
 
-    saveDigest(today, digest);
+    // Only save if there are jobs
+    if (topJobs.length > 0) {
+        saveDigest(today, digest);
+    }
+
     return digest;
 }
 
