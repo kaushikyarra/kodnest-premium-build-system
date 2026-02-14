@@ -112,15 +112,22 @@ function handleRoute() {
     // Get hash without the # symbol
     let hash = window.location.hash.slice(1);
 
-    // Remove leading slash if present
-    if (hash.startsWith('/')) {
+    // Remove all leading slashes
+    while (hash.startsWith('/')) {
         hash = hash.slice(1);
+    }
+
+    // Remove trailing slash
+    if (hash.endsWith('/')) {
+        hash = hash.slice(0, -1);
     }
 
     // Default to landing page if no hash
     if (!hash) {
         hash = 'landing';
     }
+
+    console.log('Navigating to:', hash);
 
     // Check if route exists, otherwise show 404
     const page = routes[hash];
@@ -963,9 +970,14 @@ function renderSettingsPage() {
                     <p class="form-hint">Only show jobs with match score above this threshold</p>
                 </div>
                 
-                <div class="button-group">
-                    <button class="button button--primary" id="save-preferences">Save Preferences</button>
+                <div class="form-actions">
+                    <button type="submit" class="button button--primary">Save Preferences</button>
                 </div>
+            </form>
+            
+            <div style="margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); text-align: center;">
+                <p style="color: var(--color-text-tertiary); font-size: var(--font-size-small); margin-bottom: var(--space-sm);">System Status</p>
+                <a href="#/jt/07-test" class="button button--secondary button--small" style="opacity: 0.7;">Go to System Verification</a>
             </div>
         </div>
     `;
