@@ -261,6 +261,14 @@ function renderDashboard() {
                     <option value="Indeed">Indeed</option>
                 </select>
                 
+                <select id="status-filter" class="input filter-select">
+                    <option value="">All Statuses</option>
+                    <option value="Not Applied">Not Applied</option>
+                    <option value="Applied">Applied</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="Selected">Selected</option>
+                </select>
+                
                 <select id="sort-filter" class="input filter-select">
                     <option value="latest">Latest</option>
                     <option value="oldest">Oldest</option>
@@ -286,6 +294,7 @@ function renderDashboard() {
     document.getElementById('mode-filter').addEventListener('change', filterJobs);
     document.getElementById('experience-filter').addEventListener('change', filterJobs);
     document.getElementById('source-filter').addEventListener('change', filterJobs);
+    document.getElementById('status-filter').addEventListener('change', filterJobs);
     document.getElementById('sort-filter').addEventListener('change', filterJobs);
 
     // Setup toggle listener if preferences exist
@@ -310,6 +319,7 @@ function filterJobs() {
     const modeFilter = document.getElementById('mode-filter').value;
     const experienceFilter = document.getElementById('experience-filter').value;
     const sourceFilter = document.getElementById('source-filter').value;
+    const statusFilter = document.getElementById('status-filter').value;
     const sortFilter = document.getElementById('sort-filter').value;
 
     const preferences = loadPreferences();
@@ -336,9 +346,10 @@ function filterJobs() {
         const matchesMode = !modeFilter || job.mode === modeFilter;
         const matchesExperience = !experienceFilter || job.experience === experienceFilter;
         const matchesSource = !sourceFilter || job.source === sourceFilter;
+        const matchesStatus = !statusFilter || getJobStatus(job.id) === statusFilter;
         const matchesThreshold = !showMatchesOnly || job.matchScore >= preferences.minMatchScore;
 
-        return matchesSearch && matchesLocation && matchesMode && matchesExperience && matchesSource && matchesThreshold;
+        return matchesSearch && matchesLocation && matchesMode && matchesExperience && matchesSource && matchesStatus && matchesThreshold;
     });
 
     console.log(`Filtered: ${filtered.length} jobs out of ${jobsData.length}`);
@@ -365,6 +376,95 @@ function filterJobs() {
     }
 
     renderJobCards(filtered, showMatchesOnly, preferences.minMatchScore);
+}
+
+// ============================================
+// JOB STATUS TRACKING FUNCTIONS
+// ============================================
+
+// Get job status (default: "Not Applied")
+function getJobStatus(jobId) {
+    const statuses = getAllJobStatuses();
+    return statuses[jobId] || "Not Applied";
+}
+
+// Get all job statuses
+function getAllJobStatuses() {
+    const saved = localStorage.getItem('jobTrackerStatus');
+    return saved ? JSON.parse(saved) : {};
+}
+
+// Save job status
+function setJobStatus(jobId, status) {
+    const statuses = getAllJobStatuses();
+    statuses[jobId] = status;
+    localStorage.setItem('jobTrackerStatus', JSON.stringify(statuses));
+}
+
+// Change job status and show toast
+function changeJobStatus(jobId, newStatus) {
+    setJobStatus(jobId, newStatus);
+
+    // Update UI
+    const card = document.querySelector(`.job-card button[data-id="${jobId}"]`).closest('.job-card');
+    if (card) {
+        // Update buttons
+        const buttons = card.querySelectorAll('.status-btn');
+        buttons.forEach(btn => {
+            if (btn.dataset.status === newStatus) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+
+    showToast(`Status updated: ${newStatus}`);
+
+    // If we are on the digest page, we might want to refresh the recent updates section
+    // But since that requires a reload or complex logic, we'll let it update on next visit
+
+    // Save history for digest page
+    saveStatusHistory(jobId, newStatus);
+}
+
+// Save status history for digest
+function saveStatusHistory(jobId, newStatus) {
+    const history = JSON.parse(localStorage.getItem('jobTrackerStatusHistory') || '[]');
+    const job = jobsData.find(j => j.id === jobId);
+
+    if (job) {
+        history.unshift({
+            jobId,
+            jobTitle: job.title,
+            company: job.company,
+            status: newStatus,
+            changedAt: new Date().toISOString()
+        });
+
+        // Keep last 10 updates
+        if (history.length > 10) history.pop();
+
+        localStorage.setItem('jobTrackerStatusHistory', JSON.stringify(history));
+    }
+}
+
+// Show toast notification
+function showToast(message) {
+    let toast = document.getElementById('toast-notification');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-notification';
+        toast.className = 'toast';
+        document.body.appendChild(toast);
+    }
+
+    toast.textContent = message;
+    toast.classList.add('show');
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
 }
 
 // Render job cards
@@ -403,12 +503,22 @@ function renderJobCards(jobs, showMatchesOnly = false, minMatchScore = 40) {
     document.querySelectorAll('.job-card__apply').forEach(btn => {
         btn.addEventListener('click', () => applyJob(btn.dataset.url));
     });
+
+    // Add status button listeners
+    document.querySelectorAll('.status-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const jobId = btn.dataset.id;
+            const newStatus = btn.dataset.status;
+            changeJobStatus(jobId, newStatus);
+        });
+    });
 }
 
 // Create job card HTML
 function createJobCard(job) {
     const savedJobs = getSavedJobs();
     const isSaved = savedJobs.includes(job.id);
+    const currentStatus = getJobStatus(job.id);
     const daysText = job.postedDaysAgo === 0 ? 'Today' :
         job.postedDaysAgo === 1 ? '1 day ago' :
             `${job.postedDaysAgo} days ago`;
@@ -445,6 +555,15 @@ function createJobCard(job) {
                 </span>
             </div>
             
+            <div class="job-card__status-group">
+                <div class="job-status-group">
+                    <button class="status-btn status-btn--not-applied ${currentStatus === 'Not Applied' ? 'active' : ''}" data-id="${job.id}" data-status="Not Applied">Not Applied</button>
+                    <button class="status-btn status-btn--applied ${currentStatus === 'Applied' ? 'active' : ''}" data-id="${job.id}" data-status="Applied">Applied</button>
+                    <button class="status-btn status-btn--rejected ${currentStatus === 'Rejected' ? 'active' : ''}" data-id="${job.id}" data-status="Rejected">Rejected</button>
+                    <button class="status-btn status-btn--selected ${currentStatus === 'Selected' ? 'active' : ''}" data-id="${job.id}" data-status="Selected">Selected</button>
+                </div>
+            </div>
+
             <div class="job-card__salary">${job.salaryRange}</div>
             
             <div class="job-card__footer">
@@ -870,6 +989,8 @@ function renderDigestContent(digest) {
                 </div>
             </div>
             
+            ${renderStatusUpdates()}
+            
             <div class="digest-actions">
                 <button class="button button--secondary" id="copy-digest-btn">Copy Digest to Clipboard</button>
                 <button class="button button--secondary" id="regenerate-digest-btn">Regenerate Digest</button>
@@ -961,6 +1082,45 @@ This digest was generated based on your preferences.`;
     window.location.href = mailtoLink;
 }
 
+
+// Render status updates section
+function renderStatusUpdates() {
+    const history = JSON.parse(localStorage.getItem('jobTrackerStatusHistory') || '[]');
+
+    if (history.length === 0) return '';
+
+    return `
+        <div class="status-updates-section">
+            <h3 class="status-updates-title">Recent Status Updates</h3>
+            <div class="status-updates-list">
+                ${history.map(item => `
+                    <div class="status-update-item">
+                        <div class="status-update-info">
+                            <h4 class="status-update-job">${item.jobTitle}</h4>
+                            <p class="status-update-company">${item.company}</p>
+                        </div>
+                        <div class="status-update-right">
+                            <span class="status-badge status-badge--${item.status.toLowerCase().replace(' ', '-')}">${item.status}</span>
+                            <span class="status-update-date">${formatTimeAgo(item.changedAt)}</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+// Format time ago
+function formatTimeAgo(dateStr) {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+}
 
 // Load preferences from localStorage
 function loadPreferences() {
