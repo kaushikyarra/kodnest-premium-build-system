@@ -464,6 +464,7 @@ function renderTestPage() {
                 
                 <div class="test-actions">
                     <button class="button button--secondary" id="reset-test-btn">Reset Test Status</button>
+                    <button class="button button--secondary" id="diagnostic-btn">Run Diagnostic</button>
                     <a href="#/jt/08-ship" class="button button--primary ${!allPassed ? 'disabled ship-locked' : ''}" ${!allPassed ? 'disabled' : ''}>
                         Proceed to Ship
                     </a>
@@ -482,6 +483,51 @@ function renderTestPage() {
     });
 
     document.getElementById('reset-test-btn').addEventListener('click', resetTestStatus);
+    document.getElementById('diagnostic-btn').addEventListener('click', runLogicDiagnostic);
+}
+
+function runLogicDiagnostic() {
+    const originalState = localStorage.getItem('jobTrackerTestStatus');
+    console.log('Starting Logic Diagnostic...');
+
+    try {
+        // Step 1: Reset
+        localStorage.removeItem('jobTrackerTestStatus');
+        let status = loadTestStatus();
+        if (Object.keys(status).length !== 0) throw new Error('Reset failed');
+        console.log('✓ Reset verified');
+
+        // Step 2: Set One
+        status['pref-persist'] = true;
+        saveTestStatus(status);
+        status = loadTestStatus();
+        if (!status['pref-persist']) throw new Error('Persistence failed');
+        console.log('✓ Persistence verified');
+
+        // Step 3: Check Logic
+        const allPassedBefore = Object.values(status).filter(Boolean).length === testChecklist.length;
+        if (allPassedBefore) throw new Error('Premature pass');
+
+        // Step 4: Set All
+        testChecklist.forEach(item => status[item.id] = true);
+        saveTestStatus(status);
+        const allPassedAfter = Object.values(loadTestStatus()).filter(Boolean).length === testChecklist.length;
+        if (!allPassedAfter) throw new Error('Full pass check failed');
+        console.log('✓ Counting logic verified');
+
+        alert('Diagnostic Passed! \n- Persistence: OK\n- Counters: OK\n- Ship Lock Logic: OK');
+
+    } catch (e) {
+        alert('Diagnostic FAILED: ' + e.message);
+    } finally {
+        // Restore State
+        if (originalState) {
+            localStorage.setItem('jobTrackerTestStatus', originalState);
+        } else {
+            localStorage.removeItem('jobTrackerTestStatus');
+        }
+        renderTestPage();
+    }
 }
 
 function renderShipPage() {
