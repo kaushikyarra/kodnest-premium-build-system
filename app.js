@@ -3,7 +3,7 @@
 
 // Route definitions
 const routes = {
-    '': 'dashboard',
+    '': 'landing',
     'dashboard': 'dashboard',
     'settings': 'settings',
     'saved': 'saved',
@@ -13,27 +13,40 @@ const routes = {
 
 // Page content templates
 const pages = {
+    landing: {
+        type: 'landing',
+        headline: 'Stop Missing The Right Jobs.',
+        subtext: 'Precision-matched job discovery delivered daily at 9AM.',
+        cta: 'Start Tracking',
+        ctaLink: '#/settings'
+    },
     dashboard: {
+        type: 'empty',
         title: 'Dashboard',
-        subtitle: 'This section will be built in the next step.'
+        emptyMessage: 'No jobs yet. In the next step, you will load a realistic dataset.'
     },
     settings: {
+        type: 'settings',
         title: 'Settings',
-        subtitle: 'This section will be built in the next step.'
+        subtitle: 'Configure your job preferences'
     },
     saved: {
-        title: 'Saved',
-        subtitle: 'This section will be built in the next step.'
+        type: 'empty',
+        title: 'Saved Jobs',
+        emptyMessage: 'You haven\'t saved any jobs yet. When you find interesting opportunities, save them here for later review.'
     },
     digest: {
-        title: 'Digest',
-        subtitle: 'This section will be built in the next step.'
+        type: 'empty',
+        title: 'Daily Digest',
+        emptyMessage: 'Your personalized job digest will be delivered daily at 9AM. Configure your preferences in Settings to get started.'
     },
     proof: {
+        type: 'empty',
         title: 'Proof',
-        subtitle: 'This section will be built in the next step.'
+        emptyMessage: 'This section will collect artifacts and proof of work for completed applications.'
     },
     notFound: {
+        type: '404',
         title: 'Page Not Found',
         subtitle: 'The page you are looking for does not exist. Please check the URL or navigate back to the dashboard.'
     }
@@ -94,9 +107,9 @@ function handleRoute() {
         hash = hash.slice(1);
     }
 
-    // Default to dashboard if no hash
+    // Default to landing page if no hash
     if (!hash) {
-        hash = 'dashboard';
+        hash = 'landing';
     }
 
     // Check if route exists, otherwise show 404
@@ -116,32 +129,105 @@ function renderPage(pageName) {
     const contentArea = document.getElementById('app-content');
     const navBar = document.querySelector('.app-nav');
 
-    if (contentArea && pageData) {
-        // Check if it's a 404 page
-        if (pageName === 'notFound') {
-            // Hide navigation for 404 page
-            if (navBar) navBar.style.display = 'none';
+    if (!contentArea || !pageData) return;
 
-            contentArea.innerHTML = `
-                <div class="page-container page-container--404">
-                    <h1 class="page-title">${pageData.title}</h1>
-                    <p class="page-subtitle">${pageData.subtitle}</p>
-                    <div class="button-group" style="margin-top: var(--space-lg);">
-                        <a href="#/dashboard" class="button button--primary">Back to Dashboard</a>
+    // Handle 404 page
+    if (pageData.type === '404') {
+        if (navBar) navBar.style.display = 'none';
+        contentArea.innerHTML = `
+            <div class="page-container page-container--404">
+                <h1 class="page-title">${pageData.title}</h1>
+                <p class="page-subtitle">${pageData.subtitle}</p>
+                <div class="button-group" style="margin-top: var(--space-lg);">
+                    <a href="#/dashboard" class="button button--primary">Back to Dashboard</a>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    // Show navigation for all other pages
+    if (navBar) navBar.style.display = 'flex';
+
+    // Handle landing page
+    if (pageData.type === 'landing') {
+        contentArea.innerHTML = `
+            <div class="landing-hero">
+                <h1 class="landing-hero__headline">${pageData.headline}</h1>
+                <p class="landing-hero__subtext">${pageData.subtext}</p>
+                <a href="${pageData.ctaLink}" class="button button--primary button--large">${pageData.cta}</a>
+            </div>
+        `;
+        return;
+    }
+
+    // Handle settings page
+    if (pageData.type === 'settings') {
+        contentArea.innerHTML = `
+            <div class="page-container">
+                <h1 class="page-title">${pageData.title}</h1>
+                <p class="page-subtitle">${pageData.subtitle}</p>
+                
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label class="form-label" for="role-keywords">Role Keywords</label>
+                        <input type="text" id="role-keywords" class="input" placeholder="e.g., Product Manager, UX Designer">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="locations">Preferred Locations</label>
+                        <input type="text" id="locations" class="input" placeholder="e.g., San Francisco, New York, Remote">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Work Mode</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="work-mode" value="remote" checked>
+                                <span>Remote</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="work-mode" value="hybrid">
+                                <span>Hybrid</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="work-mode" value="onsite">
+                                <span>Onsite</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="experience-level">Experience Level</label>
+                        <select id="experience-level" class="input">
+                            <option value="">Select experience level</option>
+                            <option value="entry">Entry Level (0-2 years)</option>
+                            <option value="mid">Mid Level (3-5 years)</option>
+                            <option value="senior">Senior Level (6-10 years)</option>
+                            <option value="lead">Lead/Principal (10+ years)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="button button--primary">Save Preferences</button>
                     </div>
                 </div>
-            `;
-        } else {
-            // Show navigation for regular pages
-            if (navBar) navBar.style.display = 'flex';
+            </div>
+        `;
+        return;
+    }
 
-            contentArea.innerHTML = `
-                <div class="page-container">
-                    <h1 class="page-title">${pageData.title}</h1>
-                    <p class="page-subtitle">${pageData.subtitle}</p>
+    // Handle empty state pages
+    if (pageData.type === 'empty') {
+        contentArea.innerHTML = `
+            <div class="page-container">
+                <h1 class="page-title">${pageData.title}</h1>
+                <div class="empty-state">
+                    <p class="empty-state__message">${pageData.emptyMessage}</p>
                 </div>
-            `;
-        }
+            </div>
+        `;
+        return;
     }
 }
 
