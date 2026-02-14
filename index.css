@@ -631,6 +631,17 @@ p {
     max-width: var(--max-text-width);
 }
 
+/* 404 Page Styles */
+.page-container:has(.page-title:contains("Page Not Found")) .page-title,
+.page-title:contains("Page Not Found") {
+    color: var(--color-text-primary);
+    opacity: 0.5;
+}
+
+.page-container:has(.page-title:contains("Page Not Found")) .page-subtitle {
+    opacity: 0.5;
+}
+
 /* ============================================
    RESPONSIVE - MOBILE NAVIGATION
    ============================================ */

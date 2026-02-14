@@ -32,6 +32,10 @@ const pages = {
     proof: {
         title: 'Proof',
         subtitle: 'This section will be built in the next step.'
+    },
+    notFound: {
+        title: 'Page Not Found',
+        subtitle: 'The page you are looking for does not exist. Please check the URL or navigate back to the dashboard.'
     }
 };
 
@@ -95,9 +99,15 @@ function handleRoute() {
         hash = 'dashboard';
     }
 
-    const page = routes[hash] || 'dashboard';
-    renderPage(page);
-    updateActiveNav(hash);
+    // Check if route exists, otherwise show 404
+    const page = routes[hash];
+    if (page) {
+        renderPage(page);
+        updateActiveNav(hash);
+    } else {
+        renderPage('notFound');
+        updateActiveNav(''); // Clear active state for 404
+    }
 }
 
 // Render page content
