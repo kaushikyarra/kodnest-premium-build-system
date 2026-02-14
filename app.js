@@ -758,9 +758,9 @@ function generateDailyDigest() {
         matchScore: calculateMatchScore(job, preferences)
     }));
 
-    // Filter jobs that have at least some match (score > 0)
-    // This ensures we only show jobs that match user preferences
-    const matchingJobs = jobsWithScores.filter(job => job.matchScore > 0);
+    // Filter jobs that meet the user's minimum match score threshold
+    // This ensures we only show jobs that are truly relevant
+    const matchingJobs = jobsWithScores.filter(job => job.matchScore >= preferences.minMatchScore);
 
     // Sort by matchScore (desc) then postedDaysAgo (asc)
     matchingJobs.sort((a, b) => {
