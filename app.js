@@ -163,57 +163,7 @@ function renderPage(pageName) {
 
     // Handle settings page
     if (pageData.type === 'settings') {
-        contentArea.innerHTML = `
-            <div class="page-container">
-                <h1 class="page-title">${pageData.title}</h1>
-                <p class="page-subtitle">${pageData.subtitle}</p>
-                
-                <div class="settings-form">
-                    <div class="form-group">
-                        <label class="form-label" for="role-keywords">Role Keywords</label>
-                        <input type="text" id="role-keywords" class="input" placeholder="e.g., Product Manager, UX Designer">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="locations">Preferred Locations</label>
-                        <input type="text" id="locations" class="input" placeholder="e.g., San Francisco, New York, Remote">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Work Mode</label>
-                        <div class="radio-group">
-                            <label class="radio-label">
-                                <input type="radio" name="work-mode" value="remote" checked>
-                                <span>Remote</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="work-mode" value="hybrid">
-                                <span>Hybrid</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="work-mode" value="onsite">
-                                <span>Onsite</span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="experience-level">Experience Level</label>
-                        <select id="experience-level" class="input">
-                            <option value="">Select experience level</option>
-                            <option value="entry">Entry Level (0-2 years)</option>
-                            <option value="mid">Mid Level (3-5 years)</option>
-                            <option value="senior">Senior Level (6-10 years)</option>
-                            <option value="lead">Lead/Principal (10+ years)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="button-group">
-                        <button class="button button--primary">Save Preferences</button>
-                    </div>
-                </div>
-            </div>
-        `;
+        renderSettingsPage();
         return;
     }
 
@@ -246,10 +196,29 @@ function renderPage(pageName) {
 // Render dashboard with job cards and filters
 function renderDashboard() {
     const contentArea = document.getElementById('app-content');
+    const preferences = loadPreferences();
+    const hasPreferences = preferences.roleKeywords || preferences.preferredLocations.length > 0 ||
+        preferences.preferredMode.length > 0 || preferences.experienceLevel || preferences.skills;
 
     contentArea.innerHTML = `
         <div class="page-container">
             <h1 class="page-title">Dashboard</h1>
+            
+            ${!hasPreferences ? `
+                <div class="preferences-banner">
+                    <p>Set your preferences to activate intelligent matching.</p>
+                    <a href="#/settings" class="button button--primary button--small">Go to Settings</a>
+                </div>
+            ` : ''}
+            
+            ${hasPreferences ? `
+                <div class="match-toggle-container">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="show-matches-only" class="toggle-checkbox">
+                        <span>Show only jobs above my threshold (${preferences.minMatchScore})</span>
+                    </label>
+                </div>
+            ` : ''}
             
             <div class="filter-bar">
                 <input type="text" id="search-input" class="input filter-input" placeholder="Search by title or company...">
@@ -290,6 +259,7 @@ function renderDashboard() {
                 <select id="sort-filter" class="input filter-select">
                     <option value="latest">Latest</option>
                     <option value="oldest">Oldest</option>
+                    ${hasPreferences ? '<option value="match">Match Score</option>' : ''}
                 </select>
             </div>
             
@@ -312,6 +282,11 @@ function renderDashboard() {
     document.getElementById('source-filter').addEventListener('change', filterJobs);
     document.getElementById('sort-filter').addEventListener('change', filterJobs);
 
+    // Setup toggle listener if preferences exist
+    if (hasPreferences) {
+        document.getElementById('show-matches-only').addEventListener('change', filterJobs);
+    }
+
     // Setup modal close
     document.querySelector('.modal-close').addEventListener('click', closeModal);
     document.getElementById('job-modal').addEventListener('click', (e) => {
@@ -331,22 +306,35 @@ function filterJobs() {
     const sourceFilter = document.getElementById('source-filter').value;
     const sortFilter = document.getElementById('sort-filter').value;
 
-    let filtered = jobsData.filter(job => {
+    const preferences = loadPreferences();
+    const showMatchesOnly = document.getElementById('show-matches-only')?.checked || false;
+
+    // Calculate match scores for all jobs
+    let jobsWithScores = jobsData.map(job => ({
+        ...job,
+        matchScore: calculateMatchScore(job, preferences)
+    }));
+
+    // Apply filters
+    let filtered = jobsWithScores.filter(job => {
         const matchesSearch = job.title.toLowerCase().includes(searchTerm) ||
             job.company.toLowerCase().includes(searchTerm);
         const matchesLocation = !locationFilter || job.location === locationFilter;
         const matchesMode = !modeFilter || job.mode === modeFilter;
         const matchesExperience = !experienceFilter || job.experience === experienceFilter;
         const matchesSource = !sourceFilter || job.source === sourceFilter;
+        const matchesThreshold = !showMatchesOnly || job.matchScore >= preferences.minMatchScore;
 
-        return matchesSearch && matchesLocation && matchesMode && matchesExperience && matchesSource;
+        return matchesSearch && matchesLocation && matchesMode && matchesExperience && matchesSource && matchesThreshold;
     });
 
     // Sort
     if (sortFilter === 'latest') {
         filtered.sort((a, b) => a.postedDaysAgo - b.postedDaysAgo);
-    } else {
+    } else if (sortFilter === 'oldest') {
         filtered.sort((a, b) => b.postedDaysAgo - a.postedDaysAgo);
+    } else if (sortFilter === 'match') {
+        filtered.sort((a, b) => b.matchScore - a.matchScore);
     }
 
     renderJobCards(filtered);
@@ -385,11 +373,22 @@ function createJobCard(job) {
         job.postedDaysAgo === 1 ? '1 day ago' :
             `${job.postedDaysAgo} days ago`;
 
+    // Determine match score badge class
+    let matchBadgeClass = 'badge--grey';
+    if (job.matchScore >= 80) matchBadgeClass = 'badge--green';
+    else if (job.matchScore >= 60) matchBadgeClass = 'badge--amber';
+    else if (job.matchScore >= 40) matchBadgeClass = 'badge--neutral';
+
+    const hasMatchScore = job.matchScore !== undefined;
+
     return `
         <div class="job-card">
             <div class="job-card__header">
                 <h3 class="job-card__title">${job.title}</h3>
-                <span class="badge badge--${job.source.toLowerCase()}">${job.source}</span>
+                <div class="job-card__badges">
+                    ${hasMatchScore ? `<span class="badge badge--match ${matchBadgeClass}">${job.matchScore}% Match</span>` : ''}
+                    <span class="badge badge--${job.source.toLowerCase()}">${job.source}</span>
+                </div>
             </div>
             
             <div class="job-card__company">${job.company}</div>
@@ -534,6 +533,220 @@ function renderSavedJobs() {
     });
 
     renderJobCards(savedJobs);
+}
+
+// Render settings page with preferences
+function renderSettingsPage() {
+    const contentArea = document.getElementById('app-content');
+    const preferences = loadPreferences();
+
+    contentArea.innerHTML = `
+        <div class="page-container">
+            <h1 class="page-title">Settings</h1>
+            <p class="page-subtitle">Configure your job preferences for intelligent matching</p>
+            
+            <div class="settings-form">
+                <div class="form-group">
+                    <label class="form-label" for="role-keywords">Role Keywords</label>
+                    <input type="text" id="role-keywords" class="input" placeholder="e.g., React, Frontend, JavaScript" value="${preferences.roleKeywords || ''}">
+                    <p class="form-hint">Comma-separated keywords to match in job titles and descriptions</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Preferred Locations</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="location" value="Bangalore" ${preferences.preferredLocations.includes('Bangalore') ? 'checked' : ''}>
+                            <span>Bangalore</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="location" value="Pune" ${preferences.preferredLocations.includes('Pune') ? 'checked' : ''}>
+                            <span>Pune</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="location" value="Hyderabad" ${preferences.preferredLocations.includes('Hyderabad') ? 'checked' : ''}>
+                            <span>Hyderabad</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="location" value="Chennai" ${preferences.preferredLocations.includes('Chennai') ? 'checked' : ''}>
+                            <span>Chennai</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="location" value="Mumbai" ${preferences.preferredLocations.includes('Mumbai') ? 'checked' : ''}>
+                            <span>Mumbai</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="location" value="Gurgaon" ${preferences.preferredLocations.includes('Gurgaon') ? 'checked' : ''}>
+                            <span>Gurgaon</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="location" value="Noida" ${preferences.preferredLocations.includes('Noida') ? 'checked' : ''}>
+                            <span>Noida</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Preferred Work Mode</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="mode" value="Remote" ${preferences.preferredMode.includes('Remote') ? 'checked' : ''}>
+                            <span>Remote</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="mode" value="Hybrid" ${preferences.preferredMode.includes('Hybrid') ? 'checked' : ''}>
+                            <span>Hybrid</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="mode" value="Onsite" ${preferences.preferredMode.includes('Onsite') ? 'checked' : ''}>
+                            <span>Onsite</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="experience-level">Experience Level</label>
+                    <select id="experience-level" class="input">
+                        <option value="">Any</option>
+                        <option value="Fresher" ${preferences.experienceLevel === 'Fresher' ? 'selected' : ''}>Fresher</option>
+                        <option value="0-1" ${preferences.experienceLevel === '0-1' ? 'selected' : ''}>0-1 years</option>
+                        <option value="1-3" ${preferences.experienceLevel === '1-3' ? 'selected' : ''}>1-3 years</option>
+                        <option value="3-5" ${preferences.experienceLevel === '3-5' ? 'selected' : ''}>3-5 years</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="skills">Required Skills</label>
+                    <input type="text" id="skills" class="input" placeholder="e.g., React, Node.js, MongoDB" value="${preferences.skills || ''}">
+                    <p class="form-hint">Comma-separated skills to match with job requirements</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="min-match-score">Minimum Match Score: <span id="score-value">${preferences.minMatchScore}</span></label>
+                    <input type="range" id="min-match-score" class="slider" min="0" max="100" value="${preferences.minMatchScore}" step="5">
+                    <p class="form-hint">Only show jobs with match score above this threshold</p>
+                </div>
+                
+                <div class="button-group">
+                    <button class="button button--primary" id="save-preferences">Save Preferences</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Setup slider value display
+    const slider = document.getElementById('min-match-score');
+    const scoreValue = document.getElementById('score-value');
+    slider.addEventListener('input', () => {
+        scoreValue.textContent = slider.value;
+    });
+
+    // Setup save button
+    document.getElementById('save-preferences').addEventListener('click', savePreferences);
+}
+
+// Save preferences to localStorage
+function savePreferences() {
+    const roleKeywords = document.getElementById('role-keywords').value;
+    const skills = document.getElementById('skills').value;
+    const experienceLevel = document.getElementById('experience-level').value;
+    const minMatchScore = parseInt(document.getElementById('min-match-score').value);
+
+    const preferredLocations = Array.from(document.querySelectorAll('input[name="location"]:checked'))
+        .map(cb => cb.value);
+
+    const preferredMode = Array.from(document.querySelectorAll('input[name="mode"]:checked'))
+        .map(cb => cb.value);
+
+    const preferences = {
+        roleKeywords,
+        preferredLocations,
+        preferredMode,
+        experienceLevel,
+        skills,
+        minMatchScore
+    };
+
+    localStorage.setItem('jobTrackerPreferences', JSON.stringify(preferences));
+
+    // Show success message
+    alert('Preferences saved successfully!');
+}
+
+// Load preferences from localStorage
+function loadPreferences() {
+    const saved = localStorage.getItem('jobTrackerPreferences');
+    if (saved) {
+        return JSON.parse(saved);
+    }
+
+    // Default preferences
+    return {
+        roleKeywords: '',
+        preferredLocations: [],
+        preferredMode: [],
+        experienceLevel: '',
+        skills: '',
+        minMatchScore: 40
+    };
+}
+
+// Calculate match score for a job
+function calculateMatchScore(job, preferences) {
+    let score = 0;
+
+    // +25 if any roleKeyword in job.title (case-insensitive)
+    if (preferences.roleKeywords) {
+        const keywords = preferences.roleKeywords.split(',').map(k => k.trim().toLowerCase()).filter(k => k);
+        const titleLower = job.title.toLowerCase();
+        if (keywords.some(keyword => titleLower.includes(keyword))) {
+            score += 25;
+        }
+
+        // +15 if any roleKeyword in job.description
+        const descLower = job.description.toLowerCase();
+        if (keywords.some(keyword => descLower.includes(keyword))) {
+            score += 15;
+        }
+    }
+
+    // +15 if job.location matches preferredLocations
+    if (preferences.preferredLocations.length > 0 && preferences.preferredLocations.includes(job.location)) {
+        score += 15;
+    }
+
+    // +10 if job.mode matches preferredMode
+    if (preferences.preferredMode.length > 0 && preferences.preferredMode.includes(job.mode)) {
+        score += 10;
+    }
+
+    // +10 if job.experience matches experienceLevel
+    if (preferences.experienceLevel && job.experience === preferences.experienceLevel) {
+        score += 10;
+    }
+
+    // +15 if overlap between job.skills and user.skills
+    if (preferences.skills) {
+        const userSkills = preferences.skills.split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+        const jobSkills = job.skills.map(s => s.toLowerCase());
+        const hasOverlap = userSkills.some(skill => jobSkills.some(js => js.includes(skill) || skill.includes(js)));
+        if (hasOverlap) {
+            score += 15;
+        }
+    }
+
+    // +5 if postedDaysAgo <= 2
+    if (job.postedDaysAgo <= 2) {
+        score += 5;
+    }
+
+    // +5 if source is LinkedIn
+    if (job.source === 'LinkedIn') {
+        score += 5;
+    }
+
+    // Cap at 100
+    return Math.min(score, 100);
 }
 
 // Update active navigation link
