@@ -563,6 +563,144 @@ function renderShipPage() {
 }
 
 // ============================================
+// PROOF & SUBMISSION SYSTEM
+// ============================================
+
+function loadProofData() {
+    return JSON.parse(localStorage.getItem('jobTrackerProof') || '{"lovable": "", "github": "", "deploy": ""}');
+}
+
+function saveProofData(data) {
+    localStorage.setItem('jobTrackerProof', JSON.stringify(data));
+}
+
+function calculateProjectStatus(proofData, testStatus) {
+    const executedTests = Object.values(testStatus).filter(Boolean).length;
+    const allTestsPassed = executedTests === 10;
+    const hasLinks = proofData.lovable && proofData.github && proofData.deploy;
+
+    if (allTestsPassed && hasLinks) return 'Shipped';
+    if (executedTests > 0 || proofData.lovable || proofData.github || proofData.deploy) return 'In Progress';
+    return 'Not Started';
+}
+
+function renderProofPage() {
+    const contentArea = document.getElementById('app-content');
+    const proofData = loadProofData();
+    const testStatus = loadTestStatus();
+    const projectStatus = calculateProjectStatus(proofData, testStatus);
+
+    // Step Completion Summary Data
+    const steps = [
+        { label: 'Design System Foundation', status: 'Completed' },
+        { label: 'Global Layout Structure', status: 'Completed' },
+        { label: 'Job Data & Rendering', status: 'Completed' },
+        { label: 'Preference Logic', status: 'Completed' },
+        { label: 'Daily Digest Engine', status: 'Completed' },
+        { label: 'Job Status Tracking', status: 'Completed' },
+        { label: 'Test Checklist', status: Object.keys(testStatus).length === 10 ? 'Completed' : 'Pending' }, // Simplified check
+        { label: 'Proof & Submission', status: projectStatus === 'Shipped' ? 'Completed' : 'Pending' }
+    ];
+
+    contentArea.innerHTML = `
+        <div class="page-container proof-container">
+            <div class="proof-header">
+                <h1 class="page-title">Project 1 — Job Notification Tracker</h1>
+                <span class="status-badge status-badge--${projectStatus.toLowerCase().replace(' ', '-')}">${projectStatus}</span>
+            </div>
+
+            <div class="proof-section">
+                <h2 class="proof-section-title">A) Step Completion Summary</h2>
+                <div class="step-summary-list">
+                    ${steps.map(step => `
+                        <div class="step-item">
+                            <span class="step-label">${step.label}</span>
+                            <span class="step-status step-status--${step.status.toLowerCase()}">${step.status}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div class="proof-section">
+                <h2 class="proof-section-title">B) Artifact Collection Inputs</h2>
+                <div class="artifact-form">
+                    <div class="form-group">
+                        <label for="lovable-link" class="label">Lovable Project Link <span class="required">*</span></label>
+                        <input type="url" id="lovable-link" class="input" placeholder="https://lovable.dev/..." value="${proofData.lovable}">
+                    </div>
+                    <div class="form-group">
+                        <label for="github-link" class="label">GitHub Repository Link <span class="required">*</span></label>
+                        <input type="url" id="github-link" class="input" placeholder="https://github.com/..." value="${proofData.github}">
+                    </div>
+                    <div class="form-group">
+                        <label for="deploy-link" class="label">Deployed URL <span class="required">*</span></label>
+                        <input type="url" id="deploy-link" class="input" placeholder="https://vercel.com/..." value="${proofData.deploy}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="proof-actions">
+                ${projectStatus === 'Shipped' ? '<p class="success-message-subtle">Project 1 Shipped Successfully.</p>' : ''}
+                <button class="button button--primary" id="copy-submission-btn">Copy Final Submission</button>
+            </div>
+        </div>
+    `;
+
+    // Event Listeners for Inputs
+    const inputs = ['lovable-link', 'github-link', 'deploy-link'];
+    inputs.forEach(id => {
+        document.getElementById(id).addEventListener('input', (e) => {
+            const key = id.split('-')[0];
+            proofData[key] = e.target.value;
+            saveProofData(proofData);
+
+            // Re-render to update status if needed (debounce ideally, but simple for now)
+            // For smoother UX, we might just update valid states visually, but full re-render ensures consistency
+            // renderProofPage(); // Avoiding full re-render on every keystroke to keep focus
+
+            // Just update the status badge dynamically for now
+            const newStatus = calculateProjectStatus(proofData, testStatus);
+            const badge = document.querySelector('.status-badge');
+            if (badge.textContent !== newStatus) {
+                renderProofPage(); // Re-render if status changes
+            }
+        });
+    });
+
+    document.getElementById('copy-submission-btn').addEventListener('click', () => copyFinalSubmission(proofData));
+}
+
+function copyFinalSubmission(data) {
+    const text = `
+------------------------------------------
+Job Notification Tracker — Final Submission
+
+Lovable Project:
+${data.lovable}
+
+GitHub Repository:
+${data.github}
+
+Live Deployment:
+${data.deploy}
+
+Core Features:
+- Intelligent match scoring
+- Daily digest simulation
+- Status tracking
+- Test checklist enforced
+------------------------------------------
+    `.trim();
+
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copy-submission-btn');
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = originalText, 2000);
+    });
+}
+
+// ============================================
 // STATUS TRACKING
 // ============================================
 
