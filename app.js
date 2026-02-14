@@ -4,6 +4,7 @@
 // Route definitions
 const routes = {
     '': 'landing',
+    'landing': 'landing',
     'dashboard': 'dashboard',
     'settings': 'settings',
     'saved': 'saved',
