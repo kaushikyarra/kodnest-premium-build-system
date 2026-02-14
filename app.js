@@ -10,6 +10,7 @@ const routes = {
     'saved': 'saved',
     'digest': 'digest',
     'proof': 'proof',
+    'jt/proof': 'proof',
     'jt/07-test': 'test',
     'jt/08-ship': 'ship'
 };
@@ -41,9 +42,8 @@ const pages = {
         title: 'Daily Digest'
     },
     proof: {
-        type: 'empty',
-        title: 'Proof',
-        emptyMessage: 'This section will collect artifacts and proof of work for completed applications.'
+        type: 'proof',
+        title: 'Proof & Submission'
     },
     test: {
         type: 'test',
@@ -188,6 +188,12 @@ function renderPage(pageName) {
     // Handle digest page
     if (pageData.type === 'digest') {
         renderDigestPage();
+        return;
+    }
+
+    // Handle proof page
+    if (pageData.type === 'proof') {
+        renderProofPage();
         return;
     }
 
