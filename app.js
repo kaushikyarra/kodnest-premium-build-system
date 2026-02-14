@@ -9,7 +9,9 @@ const routes = {
     'settings': 'settings',
     'saved': 'saved',
     'digest': 'digest',
-    'proof': 'proof'
+    'proof': 'proof',
+    'jt/07-test': 'test',
+    'jt/08-ship': 'ship'
 };
 
 // Page content templates
@@ -42,6 +44,16 @@ const pages = {
         type: 'empty',
         title: 'Proof',
         emptyMessage: 'This section will collect artifacts and proof of work for completed applications.'
+    },
+    test: {
+        type: 'test',
+        title: 'System Verification',
+        subtitle: 'Verify system integrity before shipping.'
+    },
+    ship: {
+        type: 'ship',
+        title: 'Ready to Ship',
+        subtitle: 'System verified. Ready for deployment.'
     },
     notFound: {
         type: '404',
@@ -169,6 +181,18 @@ function renderPage(pageName) {
     // Handle digest page
     if (pageData.type === 'digest') {
         renderDigestPage();
+        return;
+    }
+
+    // Handle test page
+    if (pageData.type === 'test') {
+        renderTestPage();
+        return;
+    }
+
+    // Handle ship page
+    if (pageData.type === 'ship') {
+        renderShipPage();
         return;
     }
 
@@ -379,7 +403,114 @@ function filterJobs() {
 }
 
 // ============================================
-// JOB STATUS TRACKING FUNCTIONS
+// TEST CHECKLIST & SHIP LOCK
+// ============================================
+
+const testChecklist = [
+    { id: 'pref-persist', label: 'Preferences persist after refresh', tip: 'Reload page and check Settings' },
+    { id: 'match-score', label: 'Match score calculates correctly', tip: 'Check math matching preferences' },
+    { id: 'matches-toggle', label: '"Show only matches" toggle works', tip: 'Enable toggle, check non-matches hidden' },
+    { id: 'save-job', label: 'Save job persists after refresh', tip: 'Save a job, reload, check Saved Jobs' },
+    { id: 'apply-tab', label: 'Apply opens in new tab', tip: 'Click Apply, check new tab opens' },
+    { id: 'status-persist', label: 'Status update persists after refresh', tip: 'Change status, reload, check persistence' },
+    { id: 'status-filter', label: 'Status filter works correctly', tip: 'Filter by status, check results' },
+    { id: 'digest-score', label: 'Digest generates top 10 by score', tip: 'Generate digest, check order' },
+    { id: 'digest-persist', label: 'Digest persists for the day', tip: 'Reload page, check digest remains' },
+    { id: 'no-errors', label: 'No console errors on main pages', tip: 'Open console (F12), browse pages' }
+];
+
+function loadTestStatus() {
+    return JSON.parse(localStorage.getItem('jobTrackerTestStatus') || '{}');
+}
+
+function saveTestStatus(status) {
+    localStorage.setItem('jobTrackerTestStatus', JSON.stringify(status));
+}
+
+function resetTestStatus() {
+    if (confirm('Are you sure you want to reset all test progress?')) {
+        localStorage.removeItem('jobTrackerTestStatus');
+        renderTestPage();
+    }
+}
+
+function renderTestPage() {
+    const contentArea = document.getElementById('app-content');
+    const status = loadTestStatus();
+    const passedCount = Object.values(status).filter(Boolean).length;
+    const totalCount = testChecklist.length;
+    const allPassed = passedCount === totalCount;
+
+    contentArea.innerHTML = `
+        <div class="page-container">
+            <h1 class="page-title">System Verification</h1>
+            <p class="page-subtitle">Verify system integrity before shipping.</p>
+            
+            <div class="test-container">
+                <div class="test-header">
+                    <h2 class="test-progress">Tests Passed: ${passedCount} / ${totalCount}</h2>
+                    ${!allPassed ? '<p class="test-warning">Resolve all issues before shipping.</p>' : '<p class="test-success">All tests passed. Ready to ship!</p>'}
+                </div>
+                
+                <div class="test-list">
+                    ${testChecklist.map(item => `
+                        <div class="test-item">
+                            <input type="checkbox" id="${item.id}" class="test-checkbox" ${status[item.id] ? 'checked' : ''}>
+                            <label for="${item.id}" class="test-label">${item.label}</label>
+                            <span class="tooltip-icon" title="${item.tip}">?</span>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="test-actions">
+                    <button class="button button--secondary" id="reset-test-btn">Reset Test Status</button>
+                    <a href="#/jt/08-ship" class="button button--primary ${!allPassed ? 'disabled ship-locked' : ''}" ${!allPassed ? 'disabled' : ''}>
+                        Proceed to Ship
+                    </a>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add event listeners
+    document.querySelectorAll('.test-checkbox').forEach(box => {
+        box.addEventListener('change', (e) => {
+            status[e.target.id] = e.target.checked;
+            saveTestStatus(status);
+            renderTestPage(); // Re-render to update counters and buttons
+        });
+    });
+
+    document.getElementById('reset-test-btn').addEventListener('click', resetTestStatus);
+}
+
+function renderShipPage() {
+    const status = loadTestStatus();
+    const passedCount = Object.values(status).filter(Boolean).length;
+    const totalCount = testChecklist.length;
+
+    // Enforce Ship Lock
+    if (passedCount < totalCount) {
+        alert('Access Denied: You must pass all 10 tests before shipping.');
+        window.location.hash = '#/jt/07-test';
+        return;
+    }
+
+    const contentArea = document.getElementById('app-content');
+    contentArea.innerHTML = `
+        <div class="page-container ship-container">
+            <h1 class="page-title">Ready to Ship 🚀</h1>
+            <div class="success-message">
+                <h2>System Verified Successfully</h2>
+                <p>All ${totalCount} tests passed. The system is stable and ready for deployment.</p>
+            </div>
+            <a href="#/dashboard" class="button button--primary">Return to Dashboard</a>
+        </div>
+    `;
+}
+
+// ============================================
+// STATUS TRACKING
 // ============================================
 
 // Get job status (default: "Not Applied")

@@ -1465,6 +1465,122 @@ select.input {
 }
 
 /* ============================================
+   TEST CHECKLIST & SHIP LOCK
+   ============================================ */
+.test-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    padding: var(--space-xl);
+    border: 1px solid var(--color-border);
+}
+
+.test-header {
+    margin-bottom: var(--space-xl);
+    text-align: center;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-lg);
+}
+
+.test-progress {
+    font-size: var(--font-size-h3);
+    margin-bottom: var(--space-xs);
+}
+
+.test-warning {
+    color: #EF4444;
+    font-weight: 500;
+}
+
+.test-success {
+    color: #10B981;
+    font-weight: 500;
+}
+
+.test-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+}
+
+.test-item {
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--color-background);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-border);
+    transition: background-color 0.2s ease;
+}
+
+.test-item:hover {
+    background-color: var(--color-background-offset);
+}
+
+.test-checkbox {
+    width: 20px;
+    height: 20px;
+    margin-right: var(--space-md);
+    cursor: pointer;
+}
+
+.test-label {
+    flex: 1;
+    font-size: var(--font-size-body);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.tooltip-icon {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 20px;
+    height: 20px;
+    background-color: var(--color-text-tertiary);
+    color: white;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: var(--space-sm);
+    cursor: help;
+}
+
+.test-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-lg);
+}
+
+.button.ship-locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--color-text-tertiary);
+}
+
+.ship-container {
+    text-align: center;
+    padding: var(--space-xl);
+}
+
+.success-message {
+    margin: var(--space-xl) 0;
+    padding: var(--space-xl);
+    background-color: #ECFDF5;
+    border: 1px solid #10B981;
+    border-radius: var(--border-radius);
+    color: #065F46;
+}
+
+.success-message h2 {
+    margin-bottom: var(--space-sm);
+}
+
+/* ============================================
    RESPONSIVE - MOBILE NAVIGATION
    ============================================ */
 @media (max-width: 768px) {
