@@ -758,8 +758,12 @@ function generateDailyDigest() {
         matchScore: calculateMatchScore(job, preferences)
     }));
 
+    // Filter jobs that have at least some match (score > 0)
+    // This ensures we only show jobs that match user preferences
+    const matchingJobs = jobsWithScores.filter(job => job.matchScore > 0);
+
     // Sort by matchScore (desc) then postedDaysAgo (asc)
-    jobsWithScores.sort((a, b) => {
+    matchingJobs.sort((a, b) => {
         if (b.matchScore !== a.matchScore) {
             return b.matchScore - a.matchScore;
         }
@@ -767,7 +771,7 @@ function generateDailyDigest() {
     });
 
     // Take top 10
-    const topJobs = jobsWithScores.slice(0, 10);
+    const topJobs = matchingJobs.slice(0, 10);
 
     const digest = {
         date: today,
