@@ -367,9 +367,19 @@ function renderJobCards(jobs, showMatchesOnly = false, minMatchScore = 40) {
     const grid = document.getElementById('jobs-grid');
 
     if (jobs.length === 0) {
-        const emptyMessage = showMatchesOnly
-            ? `No jobs match your criteria above ${minMatchScore}% threshold. Try lowering your threshold or adjusting filters.`
-            : 'No jobs found matching your filters.';
+        const preferences = loadPreferences();
+        const hasPreferences = preferences.roleKeywords || preferences.preferredLocations.length > 0 ||
+            preferences.preferredMode.length > 0 || preferences.experienceLevel || preferences.skills;
+
+        let emptyMessage;
+        if (hasPreferences) {
+            // Premium empty state when preferences are set
+            emptyMessage = 'No roles match your criteria. Adjust filters or lower threshold.';
+        } else {
+            // Generic empty state when no preferences
+            emptyMessage = 'No jobs found matching your filters.';
+        }
+
         grid.innerHTML = `<div class="empty-state"><p class="empty-state__message">${emptyMessage}</p></div>`;
         return;
     }
