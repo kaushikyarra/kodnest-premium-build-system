@@ -146,11 +146,9 @@ function renderPage(pageName) {
         return;
     }
 
-    // Show navigation for all other pages
-    if (navBar) navBar.style.display = 'flex';
-
-    // Handle landing page
+    // Handle landing page (hide navigation for full-screen hero)
     if (pageData.type === 'landing') {
+        if (navBar) navBar.style.display = 'none';
         contentArea.innerHTML = `
             <div class="landing-hero">
                 <h1 class="landing-hero__headline">${pageData.headline}</h1>
@@ -160,6 +158,9 @@ function renderPage(pageName) {
         `;
         return;
     }
+
+    // Show navigation for all other pages
+    if (navBar) navBar.style.display = 'flex';
 
     // Handle settings page
     if (pageData.type === 'settings') {
