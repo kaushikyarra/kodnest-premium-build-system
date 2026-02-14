@@ -632,14 +632,25 @@ p {
 }
 
 /* 404 Page Styles */
-.page-container:has(.page-title:contains("Page Not Found")) .page-title,
-.page-title:contains("Page Not Found") {
-    color: var(--color-text-primary);
-    opacity: 0.5;
+.page-container--404 {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: var(--space-xl);
 }
 
-.page-container:has(.page-title:contains("Page Not Found")) .page-subtitle {
-    opacity: 0.5;
+.page-container--404 .page-title {
+    color: var(--color-text-primary);
+    opacity: 0.7;
+    margin-bottom: var(--space-md);
+}
+
+.page-container--404 .page-subtitle {
+    opacity: 0.6;
+    margin-bottom: var(--space-lg);
 }
 
 /* ============================================

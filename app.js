@@ -114,14 +114,34 @@ function handleRoute() {
 function renderPage(pageName) {
     const pageData = pages[pageName];
     const contentArea = document.getElementById('app-content');
+    const navBar = document.querySelector('.app-nav');
 
     if (contentArea && pageData) {
-        contentArea.innerHTML = `
-            <div class="page-container">
-                <h1 class="page-title">${pageData.title}</h1>
-                <p class="page-subtitle">${pageData.subtitle}</p>
-            </div>
-        `;
+        // Check if it's a 404 page
+        if (pageName === 'notFound') {
+            // Hide navigation for 404 page
+            if (navBar) navBar.style.display = 'none';
+
+            contentArea.innerHTML = `
+                <div class="page-container page-container--404">
+                    <h1 class="page-title">${pageData.title}</h1>
+                    <p class="page-subtitle">${pageData.subtitle}</p>
+                    <div class="button-group" style="margin-top: var(--space-lg);">
+                        <a href="#/dashboard" class="button button--primary">Back to Dashboard</a>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Show navigation for regular pages
+            if (navBar) navBar.style.display = 'flex';
+
+            contentArea.innerHTML = `
+                <div class="page-container">
+                    <h1 class="page-title">${pageData.title}</h1>
+                    <p class="page-subtitle">${pageData.subtitle}</p>
+                </div>
+            `;
+        }
     }
 }
 
