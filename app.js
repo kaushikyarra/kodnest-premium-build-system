@@ -260,6 +260,7 @@ function renderDashboard() {
                     <option value="latest">Latest</option>
                     <option value="oldest">Oldest</option>
                     ${hasPreferences ? '<option value="match">Match Score</option>' : ''}
+                    <option value="salary">Salary</option>
                 </select>
             </div>
             
@@ -307,7 +308,14 @@ function filterJobs() {
     const sortFilter = document.getElementById('sort-filter').value;
 
     const preferences = loadPreferences();
-    const showMatchesOnly = document.getElementById('show-matches-only')?.checked || false;
+    const showMatchesOnlyCheckbox = document.getElementById('show-matches-only');
+    const showMatchesOnly = showMatchesOnlyCheckbox ? showMatchesOnlyCheckbox.checked : false;
+
+    console.log('Filter Jobs Called:', {
+        showMatchesOnly,
+        minMatchScore: preferences.minMatchScore,
+        checkboxExists: !!showMatchesOnlyCheckbox
+    });
 
     // Calculate match scores for all jobs
     let jobsWithScores = jobsData.map(job => ({
@@ -328,6 +336,8 @@ function filterJobs() {
         return matchesSearch && matchesLocation && matchesMode && matchesExperience && matchesSource && matchesThreshold;
     });
 
+    console.log(`Filtered: ${filtered.length} jobs out of ${jobsData.length}`);
+
     // Sort
     if (sortFilter === 'latest') {
         filtered.sort((a, b) => a.postedDaysAgo - b.postedDaysAgo);
@@ -335,17 +345,32 @@ function filterJobs() {
         filtered.sort((a, b) => b.postedDaysAgo - a.postedDaysAgo);
     } else if (sortFilter === 'match') {
         filtered.sort((a, b) => b.matchScore - a.matchScore);
+    } else if (sortFilter === 'salary') {
+        // Extract numeric salary for sorting (take max value from range)
+        filtered.sort((a, b) => {
+            const extractSalary = (salaryStr) => {
+                // Extract numbers from salary string (e.g., "₹6-10 LPA" -> 10, "₹30k-50k/month" -> 50)
+                const numbers = salaryStr.match(/\d+/g);
+                if (!numbers) return 0;
+                // Take the maximum number found
+                return Math.max(...numbers.map(n => parseInt(n)));
+            };
+            return extractSalary(b.salaryRange) - extractSalary(a.salaryRange);
+        });
     }
 
-    renderJobCards(filtered);
+    renderJobCards(filtered, showMatchesOnly, preferences.minMatchScore);
 }
 
 // Render job cards
-function renderJobCards(jobs) {
+function renderJobCards(jobs, showMatchesOnly = false, minMatchScore = 40) {
     const grid = document.getElementById('jobs-grid');
 
     if (jobs.length === 0) {
-        grid.innerHTML = '<div class="empty-state"><p class="empty-state__message">No jobs found matching your filters.</p></div>';
+        const emptyMessage = showMatchesOnly
+            ? `No jobs match your criteria above ${minMatchScore}% threshold. Try lowering your threshold or adjusting filters.`
+            : 'No jobs found matching your filters.';
+        grid.innerHTML = `<div class="empty-state"><p class="empty-state__message">${emptyMessage}</p></div>`;
         return;
     }
 
